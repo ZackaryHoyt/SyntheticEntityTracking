@@ -36,10 +36,11 @@ Note all setting files are expected to be JSON-formatted, and are loaded into th
 ## Python Path Configuration
 All scripts include the `src` directory in the python path. Visual Studio Code with run configurations parameterizing the environment can be used: `"env": { "PYTHONPATH": "${workspaceFolder}/src" }`, where the `workspaceFolder` reference is the path of the folder opened in VS Code. To have `workspaceFolder` correctly pointed to this project, go to `file > Open Folder...` and navigate to and select the `Synthetic Entity Tracking` project folder.
 
-## Generating Environments
-Run the `/src/environment_generation/generate_perlin_noisemaps.py` script with the `--settings` argument pointing to the configured settings. See the VS Code run configuration `Build Environments`, which uses `--settings=settings/perlin_environment_generation.json`,  for examples on how to run the script.
+## Training Setup Instructions
+### Step 1 - Generating Environments
+Run the `/src/environment_generation/generate_perlin_noisemaps.py` script with the `--settings` argument pointing to the environment generation settings. See the VS Code run configuration `Build Environments`, which uses `--settings=settings/perlin_environment_generation.json`,  for examples on how to run the script.
 
-### Environment Generation Settings:
+#### Environment Generation Settings:
 * `seed` (int) - RNG seed.
 * `size` (int) - Square size of the environment (height and width).
 * `n_samples` (int) - Number of samples to generate.
@@ -49,7 +50,12 @@ Run the `/src/environment_generation/generate_perlin_noisemaps.py` script with t
 * `perlin_scale_inverse` (float) - Inverse scale used for the Perlin noisemaps.
 * `perlin_octaves_inverse` (float) - Inverse octaves used for the Perlin noisemaps.
 
-## Training and Data Collection
+### Step 2 - Generating Baselines
+Run the `/src/target_generation/generate_baselines.py` script with the `--settings` argument pointing to the target generation settings and the `--motion_model` defining the desired motion model baseline (`smm` or `imm`). See the VS Code run configurations `Build Baselines - SMM` and `Build Baselines - IMM` for examples on how to run the script.
+
+Note that only the baselines need to be generated for the `imm` and `smm` as the density-shape map has been pre-computed. Refer to the `imm` and `smm` dataset files in the `dataset_util` package to see the computed mappings.
+
+### Step 3 - Training and Data Collection
 Training is done using the `/src/train_mm_models.py` script, which is configured by the CMDL args to select the correct motion model and settings. See the VS Code run configuration `Run Training - SMM` and `Run Training - IMM` for examples on how to run the script. Note the feature-imbalances are referred to as pixel densities within the code, as they correspond to how dense the image is. These values are also sometimes treated as the "expected pixel value" (epxv) as well due to the evolving language used during development.
 
 Running the script once will train models on ninety-nine feature-imbalances `[0.01, 0.99]` with step sizes of `0.01`, across four loss functions (MSE, BCE, Huber, and the novel BTE), and over the two provided motion models (SMM and IMM). This results in a total of **792** models. Running the script a second time will then collect the test metrics. If needing to re-train the models, the old models must be cleared out.
@@ -58,7 +64,7 @@ While a two-staged script seems odd, that's because it is. But it works and chan
 
 Testing only after all **792** models finish training has a purpose, though: because both training and testing are time-intensive processes, it allows fully finishing one before starting the other. This allowed for faster iterative development and debugging.
 
-### Training Settings
+#### Training Settings
 * `seed` (int) - RNG seed.
 * `env_dataset_file` (str) - Filepath to the archive of environments.
 * `signals_dataset_file` (str) - Filepath to the archive of grid-encoded entity positions.
@@ -73,17 +79,42 @@ Testing only after all **792** models finish training has a purpose, though: bec
 * `patience` (int) - Patience threshold for stopping the training early.
 * `lr` (float) - Initial optimizer learning rate.
 
-## Analytics
-Go to the `/src/analytics/build_test_result_metrics.py` script and update the analytics to target the training output directory. This will attempt to automatically combine the results into a more advanced set of metrics and save them as a .netcdf file (an xarray structure for keeping track of array dimension-labels and axis values).
+## Running Analytics
+The analytics are fairly hard-coded, so any changes to the provided settings for the training processes will need to be reflected in the code here. By default, it will compile metrics from the `/output/training/` directory, but if this was changed then the script will need to be updated.
+
+### Compiling Metrics
+Once both the models are trained, run the `/src/analytics/build_test_result_metrics.py` script. This script compiles all of the tracked metrics into an aggregated tensor that is more useful for the analysis. This tensor is saved as a .netcdf file, which is an `xarray` structure for keeping track of array dimension-labels and axis values, which the subsequent plots/analytics reference.
+
+The dimensions of the tensor are structured as follows: ["metric", "loss_name", "epx", "exclusive_quantile"]. Axis values along each of these dimensions is given as follows:
+* `metric` - ["measured_fp", "measured_fn", "counted_fp", "counted_fn", "measured_sums", "measured_diffs", "counted_diffs", "measured_symm_sums", "measured_symm_diffs", "counted_symm_diffs"]
+* `loss_name` - ['bce', 'huber', 'mse', 'bte']
+* `epx` - [0.01, ..., 0.99] in steps of 0.01. Note epx = expected pixel value and refers to the feature-imbalance.
+* `exclusive_quantile` - [-0.99, ..., 0, ..., 0.99] in steps of 0.01.
+
+The metric dimensions details many statistics, but only some of which are featured. Detailed axis values are given below:
+* `measured_fp` - Measure of false-positives (aka positive errors or overestimates).
+* `measured_fn` - Measure of false-negatives (aka negative errors or underestimates).
+* `counted_fp` - Instance-count of false-positives.
+* `counted_fn` - Instance-count of false-negatives.
+* `measured_sums` - Aggregated sum of measured errors (`measured_fp + measured_fn`).
+* `measured_diffs` - Aggregated difference of measured errors (`measured_fp - measured_fn`).
+* `counted_diffs` - Aggregated count-difference of false-positives versus false-negatives (`counted_fp - counted_fn`)
+* `measured_symm_sums` - Aggregated sum of measured errors with a reversed component (`measured_fp + reverse(measured_fn)`).
+* `measured_symm_diffs` - Aggregated difference of measured errors with a reversed component (`measured_fp - reverse(measured_fn)`).
+* `counted_symm_diffs` - Aggregated count-difference of falsive-positives versus a reversed count of false-negatives (`counted_fp - reverse(counted_fn)`).
+
+The *symm* (symmetric) metrics are interesting while simultaneously difficult to infer meaning from. They effectively detail how symmetrical the distrubtions are across the range of feature-imbalances to identify meta-behaviors.
+
+The two primary metrics used are the **`measured_sums`** and **`measured_diffs`**, which respectively correspond to the mean-absolute error (MAE) and mean-bias error (MBE). However, the polynomial regression uses the **`measured_fp`** and **`measured_fn`** as the can be arranged to compose either the `measured_sums` and `measured_diffs`.
 
 ### Heatmap Plotting
-Configure `/src/analytics/plot_metric_heatmaps.py` to look at the correct set of analytics files. Running this will generate heatmaps visualizing the derived metrics along the exclusive-quantile and expected pixel axes.
+Running the `/src/analytics/plot_metric_heatmaps.py` script will generate contour plots detailing the relationship both of MAE and MBE with respect to the "loss_name", "epx", and "exclusive_quantile" dimensions.
 
 ### JS Distances
-Configure `/src/analytics/js_distances.py` to look at the correct set of analytics files. Running this will generate js_distance matrix plots detailing the distribution similarities. Note this script only supports two sets of metrics at once (such as comparing SMM to IMM). However, it also computes the same-motion model distribution similarities across the loss functions used to train the models.
+Running the `/src/analytics/js_distances.py` script will generate the JSD tables that evaluate both MAE and MBE distribution similarities, averaging across the "exclusive_quantile" dimension, with respect to the "loss_name" and "epx" dimensions. Similarities are additionally done between problem spaces (stored in two different compiled files).
 
 ### Polynomial Regression
-Configure `/src/calc_metric_2d_linear_regression.py` to look at the correct set of analytics files. Running this will compute a number of polynomial regressions and print their results. Note this script can be easily modified to control the degrees of freedom used in these regressions.
+Running the `/src/calc_metric_2d_linear_regression.py` script will compute a series of polynomial regressions on the distributions of `measured_sums` and `measured_diffs` with respect to the "epx" and "exclusive_quantile" axes.
 
 # Defining New Motion Model (Optional)
 The basis of the weighted heatmaps are path-finding algorithms that, for some environment (a 2d grid), compute the least-costs travel costs from a starting position to every other position (defined within the code as the *flow*). Motion models detail the transfer- and path-cost functions that then modulate how costs are computed over a path.
