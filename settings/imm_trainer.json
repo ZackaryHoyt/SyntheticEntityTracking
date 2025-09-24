@@ -1,0 +1,16 @@
+{
+	"seed": 0,
+	"env_dataset_file": "output/env/perlin/envs_dataset.npz",
+	"dataset_file": "output/sim/perlin-flow/imms_dataset.npz",
+	"signals_dataset_file": "output/sim/perlin-flow/signals_dataset.npz",
+	"training_output_dir": "output/training/imm",
+	"rel_tensorboard_logs_dir": "logs",
+	"rel_model_checkpoint_dir": "checkpoint",
+	"rel_test_results_file": "test_results.json",
+	"data_partitions": [0.6, 0.2, 0.2],
+	
+	"batch_size": 64,
+	"max_epochs": 5,
+	"lr": 1e-3,
+	"patience": 30
+}

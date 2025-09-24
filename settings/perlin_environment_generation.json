@@ -1,0 +1,11 @@
+{
+	"seed": 0,
+	"size": 128,
+	"n_samples": 1024,
+	"n_examples": 4,
+	"env_data_output_file": "output/env/perlin/envs_dataset.npz",
+	"examples_output_dir": "output/env/perlin/examples",
+
+	"perlin_scale_inverse": 4,
+	"perlin_octaves_inverse": 16
+}

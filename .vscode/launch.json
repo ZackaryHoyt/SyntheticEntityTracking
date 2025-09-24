@@ -1,0 +1,131 @@
+{
+	// Use IntelliSense to learn about possible attributes.
+	// Hover to view descriptions of existing attributes.
+	// For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Python: Current File",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${file}",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" }
+		},
+		{
+			"name": "Build Environments",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/environment_generation/generate_perlin_noisemaps.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--settings=settings/perlin_environment_generation.json"
+			]
+		},
+		{
+			"name": "Build Baselines - SMM",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/target_generation/generate_baselines.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--motion_model=smm",
+				"--settings=settings/smm_target_generation.json"
+			]
+		},
+		{
+			"name": "Build Baselines - IMM",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/target_generation/generate_baselines.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--motion_model=imm",
+				"--settings=settings/imm_target_generation.json"
+			]
+		},
+		{
+			"name": "Compute Shape Params - SMM",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/target_generation/compute_shape_params.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--settings=settings/smm_target_generation.json"
+			]
+		},
+		{
+			"name": "Compute Shape Params - IMM",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/target_generation/compute_shape_params.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--settings=settings/imm_target_generation.json"
+			]
+		},
+		{
+			"name": "Generate Target Examples - SMM",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/target_generation/generate_examples.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--motion_model=smm",
+				"--settings=settings/smm_target_generation.json"
+			]
+		},
+		{
+			"name": "Generate Target Examples - IMM",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/target_generation/generate_examples.py",
+			"console": "integratedTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--motion_model=imm",
+				"--settings=settings/imm_target_generation.json"
+			]
+		},
+		{
+			"name": "Run Training - SMM",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/train_mm_models.py",
+			"console": "externalTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--motion_model=smm",
+				"--settings=settings/smm_trainer.json"
+			]
+		},
+		{
+			"name": "Run Training - IMM",
+			"type": "debugpy",
+			"request": "launch",
+			"program": "${workspaceFolder}/src/train_mm_models.py",
+			"console": "externalTerminal",
+			"justMyCode": true,
+			"env": { "PYTHONPATH": "${workspaceFolder}/src" },
+			"args": [
+				"--motion_model=imm",
+				"--settings=settings/imm_trainer.json"
+			]
+		}
+	]
+}

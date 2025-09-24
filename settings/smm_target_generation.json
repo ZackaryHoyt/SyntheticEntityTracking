@@ -1,0 +1,10 @@
+{
+	"seed": 0,
+	"n_examples": 4,
+	"environments_dataset_file": "output/env/perlin/envs_dataset.npz",
+	"motion_models_dataset_file": "output/sim/perlin-flow/smms_dataset.npz",
+	"signals_dataset_file": "output/sim/perlin-flow/signals_dataset.npz",
+	"raw_signals_dataset_file": "output/sim/perlin-flow/raw_signals_dataset.npz",
+	"motion_model_examples_output_dir": "output/sim/perlin-flow/smm_examples",
+	"signal_examples_output_dir": "output/sim/perlin-flow/signal_examples"
+}
